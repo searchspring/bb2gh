@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # don't process these repositories
-ignore_list=("springboard" "springboard-library" "springboard-sites")
+ignore_list=("springboard" "springboard-library" "springboard-sites" "rundeckjobs2")
 
 # how many pages of repositories to process
 pages=2
