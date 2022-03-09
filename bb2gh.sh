@@ -17,7 +17,7 @@ fi
 set -e
 mkdir -p repos
 # iterate 2 times
-for page in {1..$pages}
+for (( page=1; page<=$pages; page++ ))
 do
     repos=$(curl -s --user $BB_USERNAME:$BB_PASSWORD https://api.bitbucket.org/2.0/repositories/$BB_ORGANIZATION\?pagelen\=100\&page\=$page | jq ".values[].full_name" -r)
     for org_repo in $repos
@@ -30,12 +30,16 @@ do
                 
                 git clone -q --bare git@bitbucket.org:$org_repo repos/$repo_name
                 existCode=$(curl --write-out '%{http_code}' --silent --output /dev/null --user $GH_USERNAME:$GH_TOKEN https://api.github.com/repos/$org_repo)
+
                 # check for 404
                 if [ "$existCode" != "404" ]; then
                     echo "Skipping as exists in github already"
                 else
-                    curl -s -u $GH_USERNAME:$GH_TOKEN https://api.github.com/orgs/$GH_ORGANIZATION/repos -d "{\"name\": \"$repo_name\", \"private\": true}" | jq ".html_url" -r
+                    echo "Creating Github Repo"
+                    resp=$(curl -s -X POST -u $GH_USERNAME:$GH_TOKEN https://api.github.com/orgs/$GH_ORGANIZATION/repos -d "{\"name\": \"$repo_name\", \"private\": true}")
+                    echo $resp | jq ".html_url" -r
                     cd repos/$repo_name
+                    echo "Pushing to Github"
                     git push --quiet --mirror git@github.com:$GH_ORGANIZATION/$repo_name.git
                     cd ../..
                 fi
@@ -45,7 +49,6 @@ do
         else
             echo "Skipping existing $repo_name"
         fi
-        break
     done
 done
 rm -rf repos
